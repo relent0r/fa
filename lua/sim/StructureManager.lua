@@ -16,10 +16,12 @@ StructureManager = Class {
         self.Brain = brain
         self.Initialized = false
         self.Debug = false
-        self.EconomyUpgradeSpendDefault = 0.35
-        self.CurrentEconomyUpgradeSpend = 0.35
-        self.ExtractorsUpgrading = { TECH1 = 0, TECH2 = 0 }
-        self.EcoMassUpgradeTimeout = 180
+        self.ExtractorData = {
+            EconomyUpgradeSpendDefault = 0.35,
+            CurrentEconomyUpgradeSpend = 0.35,
+            ExtractorsUpgrading = { TECH1 = 0, TECH2 = 0 },
+            EcoMassUpgradeTimeout = 180
+        }
         if brain.CheatEnabled then
             self.EcoMultiplier = tonumber(ScenarioInfo.Options.CheatMult) or 1.0
         else
@@ -54,13 +56,13 @@ StructureManager = Class {
         local ALLBPS = __blueprints
         while true do
             local upgradeTrigger = false
-            local upgradeSpend = (aiBrain.EconomyOverTimeCurrent.MassIncome*10)*self.CurrentEconomyUpgradeSpend
+            local upgradeSpend = (aiBrain.EconomyOverTimeCurrent.MassIncome*10)*self.ExtractorData.CurrentEconomyUpgradeSpend
             if upgradeSpend > 4 or GetGameTimeSeconds() > (420 / self.EcoMultiplier) then
                 upgradeTrigger = true
             end
             local extractorsDetail, extractorTable, totalSpend = self.ExtractorsBeingUpgraded(self, aiBrain)
-            self.ExtractorsUpgrading.TECH1 = extractorsDetail.TECH1Upgrading
-            self.ExtractorsUpgrading.TECH2 = extractorsDetail.TECH2Upgrading
+            self.ExtractorData.ExtractorsUpgrading.TECH1 = extractorsDetail.TECH1Upgrading
+            self.ExtractorData.ExtractorsUpgrading.TECH2 = extractorsDetail.TECH2Upgrading
             --LOG('Core Extractor T3 Count needs to be less than 3 '..aiBrain.EcoManager.CoreExtractorT3Count)
             --LOG('Total Core Extractors needs to be greater than 2 '..aiBrain.EcoManager.TotalCoreExtractors)
             --LOG('Mex Income '..aiBrain.cmanager.income.r.m..' needs to be greater than '..(140 * self.EcoMultiplier))
@@ -267,12 +269,12 @@ StructureManager = Class {
                         end
                     else
                         if extractorUnit:IsPaused() then
-                            if aiBrain.EcoManager.ExtractorsUpgrading.TECH1 > 1 or aiBrain.EcoManager.ExtractorsUpgrading.TECH2 > 0 then
+                            if self.ExtractorData.ExtractorsUpgrading.TECH1 > 1 or self.ExtractorData.ExtractorsUpgrading.TECH2 > 0 then
                                 if self.CentralBrainExtractorUnitUpgradeClosest and not self.CentralBrainExtractorUnitUpgradeClosest.Dead 
                                 and self.CentralBrainExtractorUnitUpgradeClosest.DistanceToBase == distanceToBase then
                                     extractorUnit:SetPaused(false)
                                     WaitTicks(30)
-                                elseif aiBrain.EcoManager.ExtractorsUpgrading.TECH2 > 0 and EntityCategoryContains(categories.TECH1, extractorUnit) then
+                                elseif self.ExtractorData.ExtractorsUpgrading.TECH2 > 0 and EntityCategoryContains(categories.TECH1, extractorUnit) then
                                     extractorUnit:SetPaused(false)
                                     if extractorUpgradeTimeoutReached then
                                         WaitTicks(30)
@@ -294,7 +296,7 @@ StructureManager = Class {
                     fractionComplete = upgradedExtractor:GetFractionComplete()
                 end
                 if not extractorUpgradeTimeoutReached then
-                    if GetGameTimeSeconds() - upgradeTimeStamp > self.EcoMassUpgradeTimeout then
+                    if GetGameTimeSeconds() - upgradeTimeStamp > self.ExtractorData.EcoMassUpgradeTimeout then
                         extractorUpgradeTimeoutReached = true
                     end
                 end
