@@ -84,7 +84,7 @@ StructureManager = Class {
                 --LOG('CoreExtractorT3Count '..aiBrain.EcoManager.CoreExtractorT3Count)
             end
             if massStorage > 2500 and energyStorage > 8000 and extractorsDetail.TECH2Upgrading < 1 then
-                self:ValidateExtractorUpgrade(aiBrain, ALLBPS, extractorTable, true)
+                self:ValidateExtractorUpgrade(aiBrain, extractorTable, true)
                 WaitTicks(60)
                 continue
             end
@@ -94,13 +94,13 @@ StructureManager = Class {
                         --LOG('We Could upgrade an extractor now with instant energyefficiency and mass efficiency')
                         if (extractorsDetail.TECH1 / extractorsDetail.TECH2 >= 1.2) and upgradeSpend - totalSpend > self.T3ExtractorSpend then
                             --LOG('Extractor Ratio of T1 to T2 is >= 1.1 and and upgradeSpend - totalSpend > self.T3ExtractorSpend')
-                            self:ValidateExtractorUpgrade(aiBrain, ALLBPS, extractorTable, true)
+                            self:ValidateExtractorUpgrade(aiBrain, extractorTable, true)
                         elseif (extractorsDetail.TECH1 / extractorsDetail.TECH2 >= 1.7) or upgradeSpend < 15 then
                             --LOG('Extractor Ratio of T1 to T2 is >= 1.5 or upgrade spend under 15')
-                            self:ValidateExtractorUpgrade(aiBrain, ALLBPS, extractorTable, false)
+                            self:ValidateExtractorUpgrade(aiBrain, extractorTable, false)
                         else
                             --LOG('Else all tiers upgrade')
-                            self:ValidateExtractorUpgrade(aiBrain, ALLBPS, extractorTable, true)
+                            self:ValidateExtractorUpgrade(aiBrain, extractorTable, true)
                         end
                         WaitTicks(30)
                     --end
@@ -110,7 +110,7 @@ StructureManager = Class {
             elseif extractorsDetail.TECH1Upgrading < 5 and massStorage > 150 and upgradeTrigger then
                 if totalSpend < upgradeSpend and aiBrain.EconomyOverTimeCurrent.EnergyEfficiencyOverTime >= 0.8 then
                     --LOG('We Could upgrade a non t2 extractor now with over time')
-                    self:ValidateExtractorUpgrade(aiBrain, ALLBPS, extractorTable, false)
+                    self:ValidateExtractorUpgrade(aiBrain, extractorTable, false)
                     WaitTicks(60)
                 end
             elseif massStorage > 500 and energyStorage > 3000 and extractorsDetail.TECH2Upgrading < 2 then
@@ -126,10 +126,10 @@ StructureManager = Class {
                         --LOG('We Could upgrade an extractor now with instant energyefficiency and mass efficiency')
                         if extractorsDetail.TECH1 / extractorsDetail.TECH2 >= 1.5 or upgradeSpend < 15 then
                             --LOG('Trigger all tiers false')
-                            self:ValidateExtractorUpgrade(aiBrain, ALLBPS, extractorTable, false)
+                            self:ValidateExtractorUpgrade(aiBrain, extractorTable, false)
                         else
                             --LOG('Trigger all tiers true')
-                            self:ValidateExtractorUpgrade(aiBrain, ALLBPS, extractorTable, true)
+                            self:ValidateExtractorUpgrade(aiBrain, extractorTable, true)
                         end
                         WaitTicks(30)
                     end
@@ -147,7 +147,7 @@ StructureManager = Class {
                     if energyEfficiency >= 0.8 and massEfficiency >= 0.8 then
                         -- We Could upgrade an extractor now with instant efficiency
                         -- Trigger all tiers true
-                        self:ValidateExtractorUpgrade(aiBrain, ALLBPS, extractorTable, true)
+                        self:ValidateExtractorUpgrade(aiBrain, extractorTable, true)
                         WaitTicks(30)
                     end
                     WaitTicks(30)
@@ -157,7 +157,7 @@ StructureManager = Class {
         end
     end,
     
-    ValidateExtractorUpgrade = function(self, aiBrain, ALLBPS, extractorTable, allTiers)
+    ValidateExtractorUpgrade = function(self, aiBrain, extractorTable, allTiers)
         --LOG('ValidateExtractorUpgrade Stuff')
         local UnitPos
         local DistanceToBase
