@@ -229,20 +229,17 @@ StructureManager = Class {
                     self.CentralBrainExtractorUnitUpgradeClosest = lowestUnit
                 end
                 --LOG('Closest Extractor')
-                self:ForkThread(self.UpgradeExtractor, aiBrain, ALLBPS, lowestUnit, LowestDistanceToBase)
+                self:ForkThread(self.UpgradeExtractor, aiBrain, lowestUnit, LowestDistanceToBase)
             else
                 --LOG('There is no lowestUnit')
             end
         end
     end,
     
-    UpgradeExtractor = function(self, aiBrain, ALLBPS, extractorUnit, distanceToBase)
+    UpgradeExtractor = function(self, aiBrain, extractorUnit, distanceToBase)
         LOG('Upgrading Extractor from central brain thread')
-        local upgradeBp
-        --local upgradeID = ALLBPS[extractorUnit.UnitId].General.UpgradesTo or false
         local upgradeID = extractorUnit.Blueprint.General.UpgradesTo or false
         if upgradeID then
-            upgradeBp = ALLBPS[upgradeID]
             IssueUpgrade({extractorUnit}, upgradeID)
             WaitTicks(2)
             local fractionComplete
@@ -355,22 +352,20 @@ StructureManager = Class {
             TECH2 = {}
         }
 
-        -- own armyIndex
-        local armyIndex = aiBrain:GetArmyIndex()
         -- loop over all units and search for upgrading units
         for _, extractor in extractors do
-            if not extractor.Dead and not extractor:BeenDestroyed() and extractor:GetAIBrain():GetArmyIndex() == armyIndex and extractor:GetFractionComplete() == 1 then
+            if not IsDestroyed(extractor) and extractor:GetFractionComplete() == 1 then
                 if not extractor.InitialDelayStarted then
                     self:ForkThread(self.ExtractorInitialDelay, aiBrain, extractor)
                 end
-                if ALLBPS[extractor.UnitId].CategoriesHash.TECH1 then
+                if extractor.Blueprint.CategoriesHash.TECH1 then
                     tech1Total = tech1Total + 1
                     if not self.T2ExtractorSpend then
-                        local upgradeId = ALLBPS[extractor.UnitId].General.UpgradesTo
+                        local upgradeId = extractor.Blueprint.General.UpgradesTo
                         self.T2ExtractorSpend = (ALLBPS[upgradeId].Economy.BuildCostMass / ALLBPS[upgradeId].Economy.BuildTime * (ALLBPS[extractor.UnitId].Economy.BuildRate * self.EcoMultiplier))
                     end
                     if extractor:IsUnitState('Upgrading') then
-                        local upgradeId = ALLBPS[extractor.UnitId].General.UpgradesTo
+                        local upgradeId = extractor.Blueprint.General.UpgradesTo
                         totalSpend = totalSpend +  (ALLBPS[upgradeId].Economy.BuildCostMass / ALLBPS[upgradeId].Economy.BuildTime * (ALLBPS[extractor.UnitId].Economy.BuildRate * self.EcoMultiplier))
                         extractor.Upgrading = true
                         tech1ExtNumBuilding = tech1ExtNumBuilding + 1
@@ -378,14 +373,14 @@ StructureManager = Class {
                         extractor.Upgrading = false
                         TableInsert(extractorTable.TECH1, extractor)
                     end
-                elseif ALLBPS[extractor.UnitId].CategoriesHash.TECH2 then
+                elseif extractor.Blueprint.CategoriesHash.TECH2 then
                     tech2Total = tech2Total + 1
                     if not self.T3ExtractorSpend then
-                        local upgradeId = ALLBPS[extractor.UnitId].General.UpgradesTo
+                        local upgradeId = extractor.Blueprint.General.UpgradesTo
                         self.T3ExtractorSpend = (ALLBPS[upgradeId].Economy.BuildCostMass / ALLBPS[upgradeId].Economy.BuildTime * (ALLBPS[extractor.UnitId].Economy.BuildRate * self.EcoMultiplier))
                     end
                     if extractor:IsUnitState('Upgrading') then
-                        local upgradeId = ALLBPS[extractor.UnitId].General.UpgradesTo
+                        local upgradeId = extractor.Blueprint.General.UpgradesTo
                         totalSpend = totalSpend + (ALLBPS[upgradeId].Economy.BuildCostMass / ALLBPS[upgradeId].Economy.BuildTime * (ALLBPS[extractor.UnitId].Economy.BuildRate * self.EcoMultiplier))
                         extractor.Upgrading = true
                         tech2ExtNumBuilding = tech2ExtNumBuilding + 1
@@ -393,7 +388,7 @@ StructureManager = Class {
                         extractor.Upgrading = false
                         TableInsert(extractorTable.TECH2, extractor)
                     end
-                elseif ALLBPS[extractor.UnitId].CategoriesHash.TECH3 then
+                elseif extractor.Blueprint.CategoriesHash.TECH3 then
                     tech3Total = tech3Total + 1
                 end
             end
