@@ -63,9 +63,6 @@ StructureManager = Class {
             LOG('Total Spend is '..totalSpend..' income with ratio is '..upgradeSpend)
             local massStorage = GetEconomyStored( aiBrain, 'MASS')
             local energyStorage = GetEconomyStored( aiBrain, 'ENERGY')
-            if aiBrain.EcoManager.CoreExtractorT3Count then
-                --LOG('CoreExtractorT3Count '..aiBrain.EcoManager.CoreExtractorT3Count)
-            end
             if massStorage > 2500 and energyStorage > 8000 and aiBrain.EconomyOverTimeCurrent.EnergyEfficiencyOverTime >= 1.0 and self.ExtractorData.ExtractorsUpgrading.TECH2 < 1 then
                 self:SelectClosestExtractor(aiBrain, extractorTable, true)
                 WaitTicks(60)
@@ -151,9 +148,6 @@ StructureManager = Class {
                             if not c:IsUnitState('Upgrading') then
                                 UnitPos = c:GetPosition()
                                 DistanceToBase = VDist2Sq(BasePosition[1] or 0, BasePosition[3] or 0, UnitPos[1] or 0, UnitPos[3] or 0)
-                                if DistanceToBase < 6400 then
-                                    c.MAINBASE = true
-                                end
                                 if not LowestDistanceToBase or DistanceToBase < LowestDistanceToBase then
                                     LowestDistanceToBase = DistanceToBase
                                     lowestUnit = c
@@ -170,9 +164,6 @@ StructureManager = Class {
                             if not c:IsUnitState('Upgrading') then
                                 UnitPos = c:GetPosition()
                                 DistanceToBase = VDist2Sq(BasePosition[1] or 0, BasePosition[3] or 0, UnitPos[1] or 0, UnitPos[3] or 0)
-                                if DistanceToBase < 6400 then
-                                    c.MAINBASE = true
-                                end
                                 if not LowestDistanceToBase or DistanceToBase < LowestDistanceToBase then
                                     LowestDistanceToBase = DistanceToBase
                                     lowestUnit = c
@@ -188,9 +179,6 @@ StructureManager = Class {
                             if not c:IsUnitState('Upgrading') then
                                 UnitPos = c:GetPosition()
                                 DistanceToBase = VDist2Sq(BasePosition[1] or 0, BasePosition[3] or 0, UnitPos[1] or 0, UnitPos[3] or 0)
-                                if DistanceToBase < 6400 then
-                                    c.MAINBASE = true
-                                end
                                 if not LowestDistanceToBase or DistanceToBase < LowestDistanceToBase then
                                     LowestDistanceToBase = DistanceToBase
                                     lowestUnit = c
@@ -299,20 +287,26 @@ StructureManager = Class {
         local initial_delay = 0
         local ecoStartTime = GetGameTimeSeconds()
         local ecoTimeOut = 300
+        local BasePosition = aiBrain.BuilderManagers['MAIN'].Position
+
         unit.InitialDelayCompleted = false
         unit.InitialDelayStarted = true
         --LOG('Initial Delay loop starting')
         while initial_delay < (50 / self.EcoMultiplier) do
-            if not unit.Dead and GetEconomyStored( aiBrain, 'ENERGY') >= 150 and unit:GetFractionComplete() == 1 then
-                initial_delay = initial_delay + 10
-                if (GetGameTimeSeconds() - ecoStartTime) > ecoTimeOut then
-                    initial_delay = 50
+            if not IsDestroyed(unit) then
+                if GetEconomyStored( aiBrain, 'ENERGY') >= 150 and unit:GetFractionComplete() == 1 then
+                    initial_delay = initial_delay + 10
+                    if (GetGameTimeSeconds() - ecoStartTime) > ecoTimeOut then
+                        initial_delay = 50
+                    end
                 end
+            else
+                return
             end
-            --LOG('* AI : Initial Delay loop trigger for '..aiBrain.Nickname..' is : '..initial_delay..' out of 90')
+            LOG('* AI : Initial Delay loop trigger for '..aiBrain.Nickname..' is : '..initial_delay..' out of 90')
             WaitTicks(100)
         end
-        --LOG('Initial Delay loop completing')
+        LOG('Initial Delay loop completing')
         unit.InitialDelayCompleted = true
     end,
 
