@@ -83,13 +83,13 @@ StructureManager = Class {
             if aiBrain.EcoManager.CoreExtractorT3Count then
                 --LOG('CoreExtractorT3Count '..aiBrain.EcoManager.CoreExtractorT3Count)
             end
-            if massStorage > 2500 and energyStorage > 8000 and extractorsDetail.TECH2Upgrading < 1 then
+            if massStorage > 2500 and energyStorage > 8000 and aiBrain.EconomyOverTimeCurrent.EnergyEfficiencyOverTime >= 1.0 and extractorsDetail.TECH2Upgrading < 1 then
                 self:ValidateExtractorUpgrade(aiBrain, extractorTable, true)
                 WaitTicks(60)
                 continue
             end
             if extractorsDetail.TECH1Upgrading < 2 and extractorsDetail.TECH2Upgrading < 1 and upgradeTrigger then
-                if totalSpend < upgradeSpend and aiBrain.EconomyOverTimeCurrent.EnergyEfficiencyOverTime >= 0.8 then
+                if totalSpend < upgradeSpend and aiBrain.EconomyOverTimeCurrent.EnergyEfficiencyOverTime >= 1.0 then
                     --LOG('We Could upgrade an extractor now with over time')
                         --LOG('We Could upgrade an extractor now with instant energyefficiency and mass efficiency')
                         if (extractorsDetail.TECH1 / extractorsDetail.TECH2 >= 1.2) and upgradeSpend - totalSpend > self.T3ExtractorSpend then
@@ -108,7 +108,7 @@ StructureManager = Class {
                 end
                 WaitTicks(30)
             elseif extractorsDetail.TECH1Upgrading < 5 and massStorage > 150 and upgradeTrigger then
-                if totalSpend < upgradeSpend and aiBrain.EconomyOverTimeCurrent.EnergyEfficiencyOverTime >= 0.8 then
+                if totalSpend < upgradeSpend and aiBrain.EconomyOverTimeCurrent.EnergyEfficiencyOverTime >= 1.0 then
                     --LOG('We Could upgrade a non t2 extractor now with over time')
                     self:ValidateExtractorUpgrade(aiBrain, extractorTable, false)
                     WaitTicks(60)
@@ -136,7 +136,7 @@ StructureManager = Class {
                     WaitTicks(30)
                 end
             elseif massStorage > 2500 and energyStorage > 8000 then
-                if aiBrain.EconomyOverTimeCurrent.MassEfficiencyOverTime >= 0.8 and aiBrain.EconomyOverTimeCurrent.EnergyEfficiencyOverTime >= 0.8 then
+                if aiBrain.EconomyOverTimeCurrent.MassEfficiencyOverTime >= 0.8 and aiBrain.EconomyOverTimeCurrent.EnergyEfficiencyOverTime >= 1.0 then
                     -- We Could upgrade an extractor now with over time efficiency
                     local massIncome = GetEconomyIncome(aiBrain, 'MASS')
                     local massRequested = GetEconomyRequested(aiBrain, 'MASS')
