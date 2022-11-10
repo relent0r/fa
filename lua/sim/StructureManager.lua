@@ -53,7 +53,6 @@ StructureManager = Class {
     -- Keep track of how many extractors are currently upgrading
     -- Right now this is less about making the best decision to upgrade and more about managing the economy while that upgrade is happening.
         WaitTicks(Random(5,20))
-        local ALLBPS = __blueprints
         while true do
             local upgradeTrigger = false
             local upgradeSpend = (aiBrain.EconomyOverTimeCurrent.MassIncome*10)*self.ExtractorData.CurrentEconomyUpgradeSpend
