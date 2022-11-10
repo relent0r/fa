@@ -60,59 +60,39 @@ StructureManager = Class {
                 upgradeTrigger = true
             end
             local extractorsDetail, extractorTable, totalSpend = self.ExtractorsBeingUpgraded(self, aiBrain)
-            self.ExtractorData.ExtractorsUpgrading.TECH1 = extractorsDetail.TECH1Upgrading
-            self.ExtractorData.ExtractorsUpgrading.TECH2 = extractorsDetail.TECH2Upgrading
-            --LOG('Core Extractor T3 Count needs to be less than 3 '..aiBrain.EcoManager.CoreExtractorT3Count)
-            --LOG('Total Core Extractors needs to be greater than 2 '..aiBrain.EcoManager.TotalCoreExtractors)
-            --LOG('Mex Income '..aiBrain.cmanager.income.r.m..' needs to be greater than '..(140 * self.EcoMultiplier))
-            --LOG('T3 Land Factory Count needs to be greater than 1 '..aiBrain.smanager.fact.Land.T3)
-            --LOG('or T3 Air Factory Count needs to be greater than 1 '..aiBrain.smanager.fact.Air.T3)
-            --LOG('Efficiency over time needs to be greater than 1.0 '..aiBrain.EconomyOverTimeCurrent.EnergyEfficiencyOverTime)
-            --LOG('upgradespend - totalSpend '..(upgradeSpend - totalSpend))
-            if self.T3ExtractorSpend then
-                --RLOG('self.T3ExtractorSpend '..self.T3ExtractorSpend)
-                --RLOG('Is upgradeSpend minus total spend greater than T3ExtractorSpend?')
-            end
-
             LOG('Total Spend is '..totalSpend..' income with ratio is '..upgradeSpend)
-            --LOG('Current number of T1 mexes upgrading '..extractorsDetail.TECH1Upgrading)
-            --LOG('Current number of T2 mexes upgrading '..extractorsDetail.TECH2Upgrading)
             local massStorage = GetEconomyStored( aiBrain, 'MASS')
             local energyStorage = GetEconomyStored( aiBrain, 'ENERGY')
             if aiBrain.EcoManager.CoreExtractorT3Count then
                 --LOG('CoreExtractorT3Count '..aiBrain.EcoManager.CoreExtractorT3Count)
             end
-            if massStorage > 2500 and energyStorage > 8000 and aiBrain.EconomyOverTimeCurrent.EnergyEfficiencyOverTime >= 1.0 and extractorsDetail.TECH2Upgrading < 1 then
+            if massStorage > 2500 and energyStorage > 8000 and aiBrain.EconomyOverTimeCurrent.EnergyEfficiencyOverTime >= 1.0 and self.ExtractorData.ExtractorsUpgrading.TECH2 < 1 then
                 self:SelectClosestExtractor(aiBrain, extractorTable, true)
                 WaitTicks(60)
                 continue
             end
-            if extractorsDetail.TECH1Upgrading < 2 and extractorsDetail.TECH2Upgrading < 1 and upgradeTrigger then
+            if self.ExtractorData.ExtractorsUpgrading.TECH1 < 2 and self.ExtractorData.ExtractorsUpgrading.TECH2 < 1 and upgradeTrigger then
                 if totalSpend < upgradeSpend and aiBrain.EconomyOverTimeCurrent.EnergyEfficiencyOverTime >= 1.0 then
-                    --LOG('We Could upgrade an extractor now with over time')
-                        --LOG('We Could upgrade an extractor now with instant energyefficiency and mass efficiency')
-                        if (extractorsDetail.TECH1 / extractorsDetail.TECH2 >= 1.2) and upgradeSpend - totalSpend > self.T3ExtractorSpend then
-                            --LOG('Extractor Ratio of T1 to T2 is >= 1.1 and and upgradeSpend - totalSpend > self.T3ExtractorSpend')
-                            self:SelectClosestExtractor(aiBrain, extractorTable, true)
-                        elseif (extractorsDetail.TECH1 / extractorsDetail.TECH2 >= 1.7) or upgradeSpend < 15 then
-                            --LOG('Extractor Ratio of T1 to T2 is >= 1.5 or upgrade spend under 15')
-                            self:SelectClosestExtractor(aiBrain, extractorTable, false)
-                        else
-                            --LOG('Else all tiers upgrade')
-                            self:SelectClosestExtractor(aiBrain, extractorTable, true)
-                        end
-                        WaitTicks(30)
-                    --end
-                    WaitTicks(30)
+                    --LOG('We Could upgrade an extractor now with instant energyefficiency and mass efficiency')
+                    if (extractorsDetail.TECH1 / extractorsDetail.TECH2 >= 1.2) and upgradeSpend - totalSpend > self.T3ExtractorSpend then
+                        --LOG('Extractor Ratio of T1 to T2 is >= 1.1 and and upgradeSpend - totalSpend > self.T3ExtractorSpend')
+                        self:SelectClosestExtractor(aiBrain, extractorTable, true)
+                    elseif (extractorsDetail.TECH1 / extractorsDetail.TECH2 >= 1.7) or upgradeSpend < 15 then
+                        --LOG('Extractor Ratio of T1 to T2 is >= 1.5 or upgrade spend under 15')
+                        self:SelectClosestExtractor(aiBrain, extractorTable, false)
+                    else
+                        --LOG('Else all tiers upgrade')
+                        self:SelectClosestExtractor(aiBrain, extractorTable, true)
+                    end
                 end
                 WaitTicks(30)
-            elseif extractorsDetail.TECH1Upgrading < 5 and massStorage > 150 and upgradeTrigger then
+            elseif self.ExtractorData.ExtractorsUpgrading.TECH1 < 5 and massStorage > 150 and upgradeTrigger then
                 if totalSpend < upgradeSpend and aiBrain.EconomyOverTimeCurrent.EnergyEfficiencyOverTime >= 1.0 then
                     --LOG('We Could upgrade a non t2 extractor now with over time')
                     self:SelectClosestExtractor(aiBrain, extractorTable, false)
-                    WaitTicks(60)
+                    WaitTicks(30)
                 end
-            elseif massStorage > 500 and energyStorage > 3000 and extractorsDetail.TECH2Upgrading < 2 then
+            elseif massStorage > 500 and energyStorage > 3000 and self.ExtractorData.ExtractorsUpgrading.TECH2 < 2 then
                 if aiBrain.EconomyOverTimeCurrent.MassEfficiencyOverTime >= 1.05 and aiBrain.EconomyOverTimeCurrent.EnergyEfficiencyOverTime >= 1.05 then
                     --LOG('We Could upgrade an extractor now with over time')
                     local massIncome = GetEconomyIncome(aiBrain, 'MASS')
@@ -130,7 +110,6 @@ StructureManager = Class {
                             --LOG('Trigger all tiers true')
                             self:SelectClosestExtractor(aiBrain, extractorTable, true)
                         end
-                        WaitTicks(30)
                     end
                     WaitTicks(30)
                 end
@@ -147,7 +126,6 @@ StructureManager = Class {
                         -- We Could upgrade an extractor now with instant efficiency
                         -- Trigger all tiers true
                         self:SelectClosestExtractor(aiBrain, extractorTable, true)
-                        WaitTicks(30)
                     end
                     WaitTicks(30)
                 end
@@ -395,7 +373,9 @@ StructureManager = Class {
             end
         end
         self.TotalMexSpend = totalSpend
-        return {TECH1 = tech1Total, TECH1Upgrading = tech1ExtNumBuilding, TECH2 = tech2Total, TECH2Upgrading = tech2ExtNumBuilding, TECH3 = tech3Total }, extractorTable, totalSpend
+        self.ExtractorData.ExtractorsUpgrading.TECH1 = tech1ExtNumBuilding
+        self.ExtractorData.ExtractorsUpgrading.TECH2 = tech2ExtNumBuilding
+        return {TECH1 = tech1Total, TECH2 = tech2Total, TECH3 = tech3Total }, extractorTable, totalSpend
     end,
 }
 
