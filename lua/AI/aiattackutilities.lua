@@ -285,7 +285,6 @@ function GetBestThreatTarget(aiBrain, platoon, bSkipPathability)
             maxRange, selectedWeaponArc = GetNavalPlatoonMaxRange(aiBrain, platoon)
         end
     end
-
     for tIndex,threat in threatTable do
         --check if we can path to the position or a position nearby
         if not bSkipPathability then

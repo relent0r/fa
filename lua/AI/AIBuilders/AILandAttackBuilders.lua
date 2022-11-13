@@ -63,11 +63,9 @@ BuilderGroup {
        PlatoonTemplate = 'T1LandDFBot',
        Priority = 825, --DUNCAN - was 925
        BuilderConditions = {
-            { UCBC, 'HaveLessThanUnitsWithCategory', { 150, categories.MOBILE * categories.LAND * categories.TECH1 - categories.ENGINEER - categories.ANTIAIR } },
-            { UCBC, 'HaveLessThanUnitsWithCategory', { 1, categories.FACTORY * categories.TECH3 } },
-            { UCBC, 'HaveLessThanUnitsWithCategory', { 1, categories.FACTORY * categories.TECH2 } },
+            { UCBC, 'HaveLessThanUnitsWithCategory', { 8, categories.MOBILE * categories.LAND * categories.TECH1 * categories.BOT - categories.ENGINEER - categories.ANTIAIR } },
+            { UCBC, 'HaveLessThanUnitsWithCategory', { 1, categories.FACTORY * (categories.TECH2 + categories.TECH3) } },
             { UCBC, 'HaveGreaterThanUnitsWithCategory', { 0, categories.TRANSPORTFOCUS * categories.TECH1 } },
-            { UCBC, 'FactoryLessAtLocation', { 'LocationType', 1, categories.FACTORY * ( categories.TECH2 + categories.TECH3 ) }},
             { IBC, 'BrainNotLowPowerMode', {} },
        },
        BuilderType = 'Land',
@@ -125,7 +123,7 @@ BuilderGroup {
         BuilderConditions = {
             { UCBC, 'HaveLessThanUnitsWithCategory', { 150, categories.MOBILE * categories.LAND * categories.TECH1 - categories.ENGINEER - categories.ANTIAIR } },
             --{ UCBC, 'LocationFactoriesBuildingLess', { 'LocationType', 1, 'INDIRECTFIRE LAND MOBILE' } },
-            { UCBC, 'HaveUnitRatio', { 0.3, categories.LAND * categories.INDIRECTFIRE * categories.MOBILE, '<=', categories.LAND * categories.DIRECTFIRE * categories.MOBILE}},
+            { UCBC, 'HaveUnitRatio', { 0.3, categories.LAND * categories.INDIRECTFIRE * categories.MOBILE, '<=', categories.LAND * categories.DIRECTFIRE * categories.MOBILE }},
             { UCBC, 'FactoryLessAtLocation', { 'LocationType', 1, categories.FACTORY * categories.LAND * categories.TECH3 }},
             --{ IBC, 'BrainNotLowPowerMode', {} },
             { EBC, 'GreaterThanEconEfficiencyOverTime', { 0.6, 1.05 }},
@@ -629,6 +627,21 @@ BuilderGroup {
             NeverGuardEngineers = true,
             UseFormation = 'AttackFormation',
             AggressiveMove = true,
+            ThreatWeights = {
+                IgnoreStrongerTargetsIfWeakerThan = 10, -- If the platoon is weaker than this threat level
+                IgnoreStrongerTargetsRatio = 5, -- If platoon is weaker than the above threat then ignore stronger threats if stronger by this ratio. (so if they are 100?) 
+                PrimaryThreatTargetType = 'StructuresNotMex', -- Primary type of threat to find targets
+                SecondaryThreatTargetType = 'Land', -- Secondary type of threat to find targets
+                SecondaryThreatWeight = 1,
+                WeakAttackThreatWeight = 2, -- If the platoon is weaker than the target threat then decrease by this factor
+                StrongAttackThreatWeight = 5, -- If the platoon is stronger than the target threat then increase by this factor
+                VeryNearThreatWeight = 20, -- If the target is very close increase by this factor, default radius is 25
+                NearThreatWeight = 10, -- If the target is close increase by this factor, default radius is 75
+                MidThreatWeight = 5, -- If the target is mid range increase by this factor, default radius is 150
+                FarThreatWeight = 1, -- if the target is far awat increase by this factor default radius is 300. There is also a VeryFar which is -1
+                TargetCurrentEnemy = false, -- Take the current enemy into account when finding targets
+                IgnoreCommanderStrength = false, -- Do we ignore the ACU's antisurface threat when picking an attack location
+            },
         },
         BuilderConditions = {
             { UCBC, 'PoolLessAtLocation', { 'LocationType', 1, categories.MOBILE * categories.LAND * categories.TECH3 - categories.ENGINEER} },
@@ -647,7 +660,19 @@ BuilderGroup {
             UseFormation = 'AttackFormation',
             AggressiveMove = true,
             ThreatWeights = {
-                IgnoreStrongerTargetsRatio = 2.0,
+                IgnoreStrongerTargetsIfWeakerThan = 10, -- If the platoon is weaker than this threat level
+                IgnoreStrongerTargetsRatio = 5, -- If platoon is weaker than the above threat then ignore stronger threats if stronger by this ratio. (so if they are 100?) 
+                PrimaryThreatTargetType = 'StructuresNotMex', -- Primary type of threat to find targets
+                SecondaryThreatTargetType = 'Land', -- Secondary type of threat to find targets
+                SecondaryThreatWeight = 1,
+                WeakAttackThreatWeight = 2, -- If the platoon is weaker than the target threat then decrease by this factor
+                StrongAttackThreatWeight = 5, -- If the platoon is stronger than the target threat then increase by this factor
+                VeryNearThreatWeight = 20, -- If the target is very close increase by this factor, default radius is 25
+                NearThreatWeight = 10, -- If the target is close increase by this factor, default radius is 75
+                MidThreatWeight = 5, -- If the target is mid range increase by this factor, default radius is 150
+                FarThreatWeight = 1, -- if the target is far awat increase by this factor default radius is 300. There is also a VeryFar which is -1
+                TargetCurrentEnemy = false, -- Take the current enemy into account when finding targets
+                IgnoreCommanderStrength = false, -- Do we ignore the ACU's antisurface threat when picking an attack location
             },
         },
         BuilderConditions = {

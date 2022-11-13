@@ -18,6 +18,7 @@ local FactoryManager = import("/lua/sim/factorybuildermanager.lua")
 local PlatoonFormManager = import("/lua/sim/platoonformmanager.lua")
 local BrainConditionsMonitor = import("/lua/sim/brainconditionsmonitor.lua")
 local EngineerManager = import("/lua/sim/engineermanager.lua")
+local StructureManager = import("/lua/sim/StructureManager.lua")
 
 local SUtils = import("/lua/ai/sorianutilities.lua")
 local StratManager = import("/lua/sim/strategymanager.lua")
@@ -189,6 +190,9 @@ AIBrain = Class(moho.aibrain_methods) {
             LOG('* OnCreateAI: AIPersonality: ('..per..')')
             if string.find(per, 'sorian') then
                 self.Sorian = true
+            end
+            if per == 'adaptive' or per == 'adaptivecheat' then
+                self.DefaultAdaptiveAI = true
             end
             if DiskGetFileInfo('/lua/AI/altaiutilities.lua') then
                 self.Duncan = true
@@ -1526,6 +1530,12 @@ AIBrain = Class(moho.aibrain_methods) {
         self.EconomyTicksMonitor = 300
         self.EconomyMonitorThread = self:ForkThread(self.EconomyMonitor)
         self.LowEnergyMode = false
+        -- IMAP configuration data
+        self.IMAPConfig = {
+            OgridRadius = 0,
+            IMAPSize = 0,
+            Rings = 0,
+        }
 
         -- Add default main location and setup the builder managers
         self.NumBases = 0 -- AddBuilderManagers will increase the number
@@ -1550,6 +1560,11 @@ AIBrain = Class(moho.aibrain_methods) {
             plat:ForkThread(plat.BaseManagersDistressAISorian)
         else
             plat:ForkThread(plat.BaseManagersDistressAI)
+        end
+
+        if self.DefaultAdaptiveAI then
+            self.StructureManager = StructureManager.CreateStructureManager(self)
+            self.StructureManager:Run()
         end
 
         self.DeadBaseThread = self:ForkThread(self.DeadBaseMonitor)
@@ -5029,6 +5044,33 @@ AIBrain = Class(moho.aibrain_methods) {
                 WaitTicks(5)
             end
             WaitTicks(100)
+        end
+    end,
+
+    IMAPConfiguration = function(self)
+        -- Used to configure imap values, used for setting threat ring sizes depending on map size to try and get a somewhat decent radius
+        local maxmapdimension = math.max(ScenarioInfo.size[1],ScenarioInfo.size[2])
+
+        if maxmapdimension == 256 then
+            self.IMAPConfig.OgridRadius = 22.5
+            self.IMAPConfig.IMAPSize = 32
+            self.IMAPConfig.Rings = 2
+        elseif maxmapdimension == 512 then
+            self.IMAPConfig.OgridRadius = 22.5
+            self.IMAPConfig.IMAPSize = 32
+            self.IMAPConfig.Rings = 2
+        elseif maxmapdimension == 1024 then
+            self.IMAPConfig.OgridRadius = 45.0
+            self.IMAPConfig.IMAPSize = 64
+            self.IMAPConfig.Rings = 1
+        elseif maxmapdimension == 2048 then
+            self.IMAPConfig.OgridRadius = 89.5
+            self.IMAPConfig.IMAPSize = 128
+            self.IMAPConfig.Rings = 0
+        else
+            self.IMAPConfig.OgridRadius = 180.0
+            self.IMAPConfig.IMAPSize = 256
+            self.IMAPConfig.Rings = 0
         end
     end,
 }

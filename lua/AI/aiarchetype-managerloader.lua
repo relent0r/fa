@@ -27,6 +27,7 @@ function GetHighestBuilder(aiBrain)
                 returnVal = baseVal
                 base = k
                 aiType = baseType
+                LOG('aiType being used '..repr(baseType))
             end
         end
     end

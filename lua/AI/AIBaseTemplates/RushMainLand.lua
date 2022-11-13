@@ -33,7 +33,7 @@ BaseBuilderTemplate {
         'EngineerMassBuildersHighPri',
 
         -- Extractors
-        'Time Exempt Extractor Upgrades',
+        --'Time Exempt Extractor Upgrades',
 
         -- ACU Builders
         'Land Rush Initial ACU Builders',
@@ -164,8 +164,8 @@ BaseBuilderTemplate {
             Gate = 1,
         },
         MassToFactoryValues = {
-            T1Value = 6,
-            T2Value = 15,
+            T1Value = 5,
+            T2Value = 14,
             T3Value = 22.5
         },
     },

@@ -3105,7 +3105,7 @@ Platoon = Class(moho.platoon_methods) {
             -- merge with nearby platoons
             if numberOfUnitsInPlatoon < self.PlatoonData.MaxPlatoonSize then
                 self.PlatoonFull = false
-                self:MergeWithNearbyPlatoons('AttackForceAI', 10, maxPlatoonSize)
+                self:MergeWithNearbyPlatoons('AttackForceAI', 15, maxPlatoonSize)
             else
                 self.PlatoonFull = true
             end
