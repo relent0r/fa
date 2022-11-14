@@ -12,13 +12,13 @@ local TableSort = table.sort
 
 StructureManager = Class {
     Create = function(self, brain)
-        LOG('Creating Structure Manager')
         self.Brain = brain
         self.Initialized = false
         self.Debug = false
+        self.UpgradeStrategy = 'balanced'
         self.ExtractorData = {
-            EconomyUpgradeSpendDefault = 0.25,
-            CurrentEconomyUpgradeSpend = 0.25,
+            EconomyUpgradeSpendDefault = 0.20,
+            CurrentEconomyUpgradeSpend = 0.30,
             ExtractorsUpgrading = { TECH1 = 0, TECH2 = 0 },
             CurrentExtractorCount = { TECH1 = 0, TECH2 = 0, TECH3 = 0},
             EcoMassUpgradeTimeout = 180,
@@ -29,17 +29,19 @@ StructureManager = Class {
         else
             self.EcoMultiplier = 1.0
         end
-        LOG('StructureManager EcoMultiplier '..self.EcoMultiplier)
+        local per = ScenarioInfo.ArmySetup[self.Name].AIPersonality
+        if per == 'turtle' or per == 'turtlecheat' then
+            self.UpgradeStrategy = 'eco'
+            CurrentEconomyUpgradeSpend = 0.35
+        end
     end,
 
     Run = function(self)
-       LOG('AI : StructureManager Starting')
         self:ForkThread(self.ExtractorUpgradeThread, self.Brain)
         if self.Debug then
             self:ForkThread(self.StructureDebugThread)
         end
         self.Initialized = true
-       --LOG('AI : StructureManager Started')
     end,
 
     ForkThread = function(self, fn, ...)
@@ -52,85 +54,89 @@ StructureManager = Class {
         end
     end,
 
-    ExtractorUpgradeThread = function(self, aiBrain)
+    --- Main extractor upgrade loop, this checks economic metrics and upgrades extractors
+    ---@param self Structure Manager
+    ExtractorUpgradeThread = function(self)
     -- Keep track of how many extractors are currently upgrading
     -- Right now this is less about making the best decision to upgrade and more about managing the economy while that upgrade is happening.
         WaitTicks(Random(5,20))
         while true do
             local gameTime = GetGameTimeSeconds()
             local upgradeTrigger = false
-            local upgradeSpend = (aiBrain.EconomyOverTimeCurrent.MassIncome*10)*self.ExtractorData.CurrentEconomyUpgradeSpend
+            local upgradeSpend = (self.Brain.EconomyOverTimeCurrent.MassIncome*10)*self.ExtractorData.CurrentEconomyUpgradeSpend
             if upgradeSpend > 4 or gameTime > (420 / self.EcoMultiplier) then
                 upgradeTrigger = true
             end
-            if gameTime > 420 and self.CurrentEconomyUpgradeSpend < 0.35 then
-                self.CurrentEconomyUpgradeSpend = 0.35
-                LOG('Structure Manager Increasing spend to '..self.CurrentEconomyUpgradeSpend)
+            if gameTime > 420 and self.CurrentEconomyUpgradeSpend < 0.35 and self.UpgradeStrategy ~= 'eco' then
+                self.CurrentEconomyUpgradeSpend = 0.30
             end
-            local extractorTable = self.ExtractorsBeingUpgraded(self, aiBrain)
+            local extractorTable = self:ExtractorsBeingUpgraded()
             LOG('Total Spend is '..self.TotalExtractorSpend..' income with ratio is '..upgradeSpend)
-            local massStorage = GetEconomyStored( aiBrain, 'MASS')
-            local energyStorage = GetEconomyStored( aiBrain, 'ENERGY')
-            if massStorage > 2500 and energyStorage > 8000 and aiBrain.EconomyOverTimeCurrent.EnergyEfficiencyOverTime >= 1.0 and self.ExtractorData.ExtractorsUpgrading.TECH2 < 1 then
-                self:SelectClosestExtractor(aiBrain, extractorTable, true)
+            local massStorage = GetEconomyStored( self.Brain, 'MASS')
+            local energyStorage = GetEconomyStored( self.Brain, 'ENERGY')
+            -- We have alot of excess mass and no upgrading T2 extractors, lets upgrade one and dump the mass into that
+            if massStorage > 2500 and energyStorage > 8000 and self.Brain.EconomyOverTimeCurrent.EnergyEfficiencyOverTime >= 1.0 and self.ExtractorData.ExtractorsUpgrading.TECH2 < 1 then
+                self:SelectClosestExtractor(extractorTable, true)
                 WaitTicks(60)
                 continue
             end
             if self.ExtractorData.ExtractorsUpgrading.TECH1 < 2 and self.ExtractorData.ExtractorsUpgrading.TECH2 < 1 and upgradeTrigger then
-                if self.TotalExtractorSpend < upgradeSpend and aiBrain.EconomyOverTimeCurrent.EnergyEfficiencyOverTime >= 1.0 then
-                    --LOG('We Could upgrade an extractor now with instant energyefficiency and mass efficiency')
+                -- Check if we can upgrade an extractor now with available upgrade spend and energy efficiency over time
+                if self.TotalExtractorSpend < upgradeSpend and self.Brain.EconomyOverTimeCurrent.EnergyEfficiencyOverTime >= 1.0 then
+                    -- Logic for comparing ratios and income to decide to we should try T1 upgrades only or T1 and T2.
                     if (self.ExtractorData.CurrentExtractorCount.TECH1 / self.ExtractorData.CurrentExtractorCount.TECH2 >= 1.2) and upgradeSpend - self.TotalExtractorSpend > self.T3ExtractorCost then
-                        --LOG('Extractor Ratio of T1 to T2 is >= 1.1 and and upgradeSpend - self.TotalExtractorSpend > self.T3ExtractorCost')
-                        self:SelectClosestExtractor(aiBrain, extractorTable, true)
+                        self:SelectClosestExtractor(extractorTable, true)
                     elseif (self.ExtractorData.CurrentExtractorCount.TECH1 / self.ExtractorData.CurrentExtractorCount.TECH2 >= 1.7) or upgradeSpend < 15 then
                         --LOG('Extractor Ratio of T1 to T2 is >= 1.5 or upgrade spend under 15')
-                        self:SelectClosestExtractor(aiBrain, extractorTable, false)
+                        self:SelectClosestExtractor(extractorTable, false)
                     else
                         --LOG('Else all tiers upgrade')
-                        self:SelectClosestExtractor(aiBrain, extractorTable, true)
+                        self:SelectClosestExtractor(extractorTable, true)
                     end
                 end
                 WaitTicks(30)
+                -- We have more than a few extractors upgrading. Do we still have excess mass? Lets try more T1 Extractors
             elseif self.ExtractorData.ExtractorsUpgrading.TECH1 < 5 and massStorage > 150 and upgradeTrigger then
-                if self.TotalExtractorSpend < upgradeSpend and aiBrain.EconomyOverTimeCurrent.EnergyEfficiencyOverTime >= 1.0 then
-                    --LOG('We Could upgrade a non t2 extractor now with over time')
-                    self:SelectClosestExtractor(aiBrain, extractorTable, false)
+                if self.TotalExtractorSpend < upgradeSpend and self.Brain.EconomyOverTimeCurrent.EnergyEfficiencyOverTime >= 1.0 then
+                    self:SelectClosestExtractor(extractorTable, false)
                     WaitTicks(30)
                 end
+                -- We still have excess mass? Lets try another T2 extractor
             elseif massStorage > 500 and energyStorage > 3000 and self.ExtractorData.ExtractorsUpgrading.TECH2 < 2 then
-                if aiBrain.EconomyOverTimeCurrent.MassEfficiencyOverTime >= 1.05 and aiBrain.EconomyOverTimeCurrent.EnergyEfficiencyOverTime >= 1.05 then
+                if self.Brain.EconomyOverTimeCurrent.MassEfficiencyOverTime >= 1.05 and self.Brain.EconomyOverTimeCurrent.EnergyEfficiencyOverTime >= 1.05 then
                     --LOG('We Could upgrade an extractor now with over time')
-                    local massIncome = GetEconomyIncome(aiBrain, 'MASS')
-                    local massRequested = GetEconomyRequested(aiBrain, 'MASS')
-                    local energyIncome = GetEconomyIncome(aiBrain, 'ENERGY')
-                    local energyRequested = GetEconomyRequested(aiBrain, 'ENERGY')
+                    local massIncome = GetEconomyIncome(self.Brain, 'MASS')
+                    local massRequested = GetEconomyRequested(self.Brain, 'MASS')
+                    local energyIncome = GetEconomyIncome(self.Brain, 'ENERGY')
+                    local energyRequested = GetEconomyRequested(self.Brain, 'ENERGY')
                     local massEfficiency = math.min(massIncome / massRequested, 2)
                     local energyEfficiency = math.min(energyIncome / energyRequested, 2)
                     if energyEfficiency >= 1.05 and massEfficiency >= 1.05 then
                         --LOG('We Could upgrade an extractor now with instant energyefficiency and mass efficiency')
                         if self.ExtractorData.CurrentExtractorCount.TECH1 / self.ExtractorData.CurrentExtractorCount.TECH2 >= 1.5 or upgradeSpend < 15 then
                             --LOG('Trigger all tiers false')
-                            self:SelectClosestExtractor(aiBrain, extractorTable, false)
+                            self:SelectClosestExtractor(extractorTable, false)
                         else
                             --LOG('Trigger all tiers true')
-                            self:SelectClosestExtractor(aiBrain, extractorTable, true)
+                            self:SelectClosestExtractor(extractorTable, true)
                         end
                     end
                     WaitTicks(30)
                 end
+                -- We have alot of excess mass, chances are we just reclaimed something big. Lets throw it at an upgrade.
             elseif massStorage > 2500 and energyStorage > 8000 then
-                if aiBrain.EconomyOverTimeCurrent.MassEfficiencyOverTime >= 0.8 and aiBrain.EconomyOverTimeCurrent.EnergyEfficiencyOverTime >= 1.0 then
+                if self.Brain.EconomyOverTimeCurrent.MassEfficiencyOverTime >= 0.8 and self.Brain.EconomyOverTimeCurrent.EnergyEfficiencyOverTime >= 1.0 then
                     -- We Could upgrade an extractor now with over time efficiency
-                    local massIncome = GetEconomyIncome(aiBrain, 'MASS')
-                    local massRequested = GetEconomyRequested(aiBrain, 'MASS')
-                    local energyIncome = GetEconomyIncome(aiBrain, 'ENERGY')
-                    local energyRequested = GetEconomyRequested(aiBrain, 'ENERGY')
+                    local massIncome = GetEconomyIncome(self.Brain, 'MASS')
+                    local massRequested = GetEconomyRequested(self.Brain, 'MASS')
+                    local energyIncome = GetEconomyIncome(self.Brain, 'ENERGY')
+                    local energyRequested = GetEconomyRequested(self.Brain, 'ENERGY')
                     local massEfficiency = math.min(massIncome / massRequested, 2)
                     local energyEfficiency = math.min(energyIncome / energyRequested, 2)
-                    if energyEfficiency >= 0.8 and massEfficiency >= 0.8 then
+                    if energyEfficiency >= 1.0 and massEfficiency >= 0.8 then
                         -- We Could upgrade an extractor now with instant efficiency
                         -- Trigger all tiers true
-                        self:SelectClosestExtractor(aiBrain, extractorTable, true)
+                        self:SelectClosestExtractor(extractorTable, true)
                     end
                     WaitTicks(30)
                 end
@@ -138,17 +144,21 @@ StructureManager = Class {
             WaitTicks(30)
         end
     end,
-    
-    SelectClosestExtractor = function(self, aiBrain, extractorTable, allTiers)
-        --LOG('SelectClosestExtractor Stuff')
+
+
+    --- Triggers an extractor upgrade after identifying the closest.
+    ---@param self Structure Manager
+    ---@param cats extractorTable a table of extractors that should be available for upgrade
+    ---@param allTiers boolean true/false consider T1 and T2 extractors or just T1
+    SelectClosestExtractor = function(self, extractorTable, allTiers)
+        -- We are going to find the closest extractor to the main base that isn't already upgrading or paused
+        -- You could do smart things select safer extractors here but thats what the initial delay is supposed to do
         local UnitPos
         local DistanceToBase
         local LowestDistanceToBase
         local lowestUnit = false
-        local BasePosition = aiBrain.BuilderManagers['MAIN'].Position
-        --LOG('BasePosition is '..repr(BasePosition))
-        if extractorTable then
-            --LOG('extractorTable present in upgrade validation')                
+        local BasePosition = self.Brain.BuilderManagers['MAIN'].Position
+        if extractorTable then            
             if not allTiers then
                 for _, c in extractorTable.TECH1 do
                     if c and not c.Dead then
@@ -159,7 +169,6 @@ StructureManager = Class {
                                 if not LowestDistanceToBase or DistanceToBase < LowestDistanceToBase then
                                     LowestDistanceToBase = DistanceToBase
                                     lowestUnit = c
-                                    --LOG('T1 lowestUnit added alltiers false')
                                 end
                             end
                         end
@@ -175,7 +184,6 @@ StructureManager = Class {
                                 if not LowestDistanceToBase or DistanceToBase < LowestDistanceToBase then
                                     LowestDistanceToBase = DistanceToBase
                                     lowestUnit = c
-                                    --LOG('T1 lowestUnit added alltiers true')
                                 end
                             end
                         end
@@ -190,7 +198,6 @@ StructureManager = Class {
                                 if not LowestDistanceToBase or DistanceToBase < LowestDistanceToBase then
                                     LowestDistanceToBase = DistanceToBase
                                     lowestUnit = c
-                                    --LOG('T2 lowestUnit added alltiers true')
                                 end
                             end
                         end
@@ -204,14 +211,18 @@ StructureManager = Class {
                     self.CentralBrainExtractorUnitUpgradeClosest = lowestUnit
                 end
                 LOG('Closest Extractor is upgrades, distance is '..LowestDistanceToBase)
-                self:ForkThread(self.UpgradeExtractor, aiBrain, lowestUnit, LowestDistanceToBase)
+                self:ForkThread(self.UpgradeExtractor, lowestUnit, LowestDistanceToBase)
             else
                 --LOG('There is no lowestUnit')
             end
         end
     end,
     
-    UpgradeExtractor = function(self, aiBrain, extractorUnit, distanceToBase)
+    --- Upgrades an extractor and pauses extractor upgrades if economy is hurting
+    ---@param self Structure Manager
+    ---@param extractorUnit unit Extractor that is going to be upgraded
+    ---@param distanceToBase integer Extractors distance to the main base
+    UpgradeExtractor = function(self, extractorUnit, distanceToBase)
         LOG('Upgrading Extractor from central brain thread')
         local upgradeID = extractorUnit.Blueprint.General.UpgradesTo or false
         if upgradeID then
@@ -235,7 +246,7 @@ StructureManager = Class {
                     --LOG('This is a new closest extractor upgrading at '..distanceToBase)
                 end
                 if not bypassEcoManager and fractionComplete < 0.65 then
-                    if (GetEconomyTrend(aiBrain, 'MASS') <= 0.0 and GetEconomyStored(aiBrain, 'MASS') <= 150) or GetEconomyStored( aiBrain, 'ENERGY') < 200 then
+                    if (GetEconomyTrend(self.Brain, 'MASS') <= 0.0 and GetEconomyStored(self.Brain, 'MASS') <= 150) or GetEconomyStored( self.Brain, 'ENERGY') < 200 then
                         if not extractorUnit:IsPaused() then
                             extractorUnit:SetPaused(true)
                             WaitTicks(10)
@@ -253,7 +264,7 @@ StructureManager = Class {
                                         WaitTicks(30)
                                     end
                                     WaitTicks(30)
-                                elseif GetEconomyStored(aiBrain, 'MASS') > 250 then
+                                elseif GetEconomyStored(self.Brain, 'MASS') > 250 then
                                     extractorUnit:SetPaused(false)
                                     WaitTicks(30)
                                 end
@@ -281,7 +292,7 @@ StructureManager = Class {
                 end
             end
             if upgradedExtractor and not upgradedExtractor.Dead then
-                if VDist3Sq(upgradedExtractor:GetPosition(), aiBrain.BuilderManagers['MAIN'].Position) < 6400 then
+                if VDist3Sq(upgradedExtractor:GetPosition(), self.Brain.BuilderManagers['MAIN'].Position) < 6400 then
                     upgradedExtractor.MAINBASE = true
                 end
             end
@@ -291,7 +302,10 @@ StructureManager = Class {
         WaitTicks(80)
     end,
 
-    ExtractorInitialDelay = function(self, aiBrain, unit)
+    --- Stops the unit from being upgraded until it has been alive for a certain amount of time
+    ---@param self Structure Manager
+    ---@param unit unit Extractor
+    ExtractorInitialDelay = function(self, unit)
         local initial_delay = 0
         local ecoStartTime = GetGameTimeSeconds()
         local ecoTimeOut = 300
@@ -301,7 +315,7 @@ StructureManager = Class {
         --LOG('Initial Delay loop starting')
         while initial_delay < (50 / self.EcoMultiplier) do
             if not IsDestroyed(unit) then
-                if GetEconomyStored( aiBrain, 'ENERGY') >= 150 and unit:GetFractionComplete() == 1 then
+                if GetEconomyStored( self.Brain, 'ENERGY') >= 150 and unit:GetFractionComplete() == 1 then
                     initial_delay = initial_delay + 10
                     if (GetGameTimeSeconds() - ecoStartTime) > ecoTimeOut then
                         initial_delay = 50
@@ -315,10 +329,10 @@ StructureManager = Class {
         unit.InitialDelayCompleted = true
     end,
 
-    ExtractorsBeingUpgraded = function(self, aiBrain)
+    ExtractorsBeingUpgraded = function(self)
         -- Returns number of extractors upgrading
         local ALLBPS = __blueprints
-        local extractors = aiBrain:GetListOfUnits(categories.MASSEXTRACTION, false)
+        local extractors = self.Brain:GetListOfUnits(categories.MASSEXTRACTION, false)
         local tech1ExtNumBuilding = 0
         local tech2ExtNumBuilding = 0
         local tech1Total = 0
@@ -334,7 +348,7 @@ StructureManager = Class {
         for _, extractor in extractors do
             if not IsDestroyed(extractor) and extractor:GetFractionComplete() == 1 then
                 if not extractor.InitialDelayStarted then
-                    self:ForkThread(self.ExtractorInitialDelay, aiBrain, extractor)
+                    self:ForkThread(self.ExtractorInitialDelay, extractor)
                 end
                 if extractor.Blueprint.CategoriesHash.TECH1 then
                     tech1Total = tech1Total + 1
