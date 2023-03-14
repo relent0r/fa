@@ -3508,3 +3508,102 @@ function ShiftPosition(pos1, pos2, dist, reverse)
     z = math.min(ScenarioInfo.size[2]-5,math.max(5,z))
     return {x,GetSurfaceHeight(x,z),z}
 end
+
+CreateIntelGrid = function(aiBrain, playableArea)
+    
+    -- by default, 16x16 iMAP
+    LOG('playableArea is '..repr(playableArea))
+    local n = 16 
+    local mx = ScenarioInfo.size[1]
+    local mz = ScenarioInfo.size[2]
+    local GetTerrainHeight = GetTerrainHeight
+    LOG('Intel Grid MapSize X : '..mx..' Z: '..mz)
+
+    -- smaller maps have a 8x8 iMAP
+    if mx == mz and mx == 256 then 
+        n = 8
+    end
+    
+    local intelGrid = {}
+    
+    -- distance per cell
+    local fx = 1 / n * mx 
+    local fz = 1 / n * mz 
+
+    -- draw iMAP information
+    local startingGridx = 256
+    local endingGridx = 1
+    local startingGridz = 256
+    local endingGridz = 1
+    for x = 1, n do 
+        intelGrid[x] = {}
+        for z = 1, n do 
+            intelGrid[x][z] = { }
+            intelGrid[x][z].Position = { }
+            intelGrid[x][z].Radars = { }
+            intelGrid[x][z].Size = { }
+            intelGrid[x][z].DistanceToMain = 0
+            intelGrid[x][z].AssignedScout = false
+            intelGrid[x][z].LastScouted = 0
+            intelGrid[x][z].RecentScoutDeaths = 0
+            intelGrid[x][z].TimeScouted = 0
+            intelGrid[x][z].LastThreatCheck = 0
+            intelGrid[x][z].Enabled = false
+            intelGrid[x][z].MustScout = false
+            intelGrid[x][z].ScoutPriority = 0
+            intelGrid[x][z].IntelCoverage = false
+            intelGrid[x][z].LandThreat = 0
+            intelGrid[x][z].DefenseThreat = 0
+            intelGrid[x][z].AirThreat = 0
+            intelGrid[x][z].AntiSurfaceThreat = 0
+            intelGrid[x][z].ACUThreat = 0
+            intelGrid[x][z].AdjacentGrids = {}
+            intelGrid[x][z].Graphs = { }
+            intelGrid[x][z].Graphs.MAIN = { GraphChecked = false, Land = false, Amphibious = false, NoGraph = false }
+            local cx = fx * (x - 0.5)
+            local cz = fz * (z - 0.5)
+            if cx < playableArea[1] or cz < playableArea[2] or cx > playableArea[3] or cz > playableArea[4] then
+                continue
+            end
+            startingGridx = math.min(x, startingGridx)
+            startingGridz = math.min(z, startingGridz)
+            endingGridx = math.max(x, endingGridx)
+            endingGridz = math.max(z, endingGridz)
+            intelGrid[x][z].Position = {cx, GetTerrainHeight(cx, cz), cz}
+            intelGrid[x][z].DistanceToMain = VDist3(intelGrid[x][z].Position, aiBrain.IntelFramework.StartPosition) 
+            intelGrid[x][z].Water = GetTerrainHeight(cx, cz) < GetSurfaceHeight(cx, cz)
+            intelGrid[x][z].Size = { sx = fx, sz = fz}
+            intelGrid[x][z].Enabled = true
+        end
+    end
+    aiBrain.IntelFramework.IntelGrid = intelGrid
+    aiBrain.IntelFramework.IntelGridSize = fx
+    aiBrain.IntelFramework.IntelGridXMin = startingGridx
+    aiBrain.IntelFramework.IntelGridXMax = endingGridx
+    aiBrain.IntelFramework.IntelGridZMin = startingGridz
+    aiBrain.IntelFramework.IntelGridZMax = endingGridz
+    local gridSizeX, gridSizeZ = GetIntelGrid(aiBrain.IntelFramework, {playableArea[3] - 16, 0, playableArea[4] - 16})
+    aiBrain.IntelFramework.IntelGridXRes = gridSizeX
+    aiBrain.IntelFramework.IntelGridZRes = gridSizeZ
+    LOG('MapIntelGridXRes '..repr(aiBrain.IntelFramework.IntelGridXRes))
+    LOG('MapIntelGridZRes '..repr(aiBrain.IntelFramework.IntelGridZRes))
+    LOG('aiBrain.IntelManager.MapIntelGridXMin '..aiBrain.IntelFramework.IntelGridXMin)
+    LOG('aiBrain.IntelManager.MapIntelGridXMax '..aiBrain.IntelFramework.IntelGridXMax)
+    LOG('aiBrain.IntelManager.MapIntelGridZMin '..aiBrain.IntelFramework.IntelGridZMin)
+    LOG('aiBrain.IntelManager.MapIntelGridZMax '..aiBrain.IntelFramework.IntelGridZMax)
+    LOG('Map Intel Grid '..repr(aiBrain.IntelFramework.IntelGrid))
+end
+
+GetIntelGrid = function(intelFramework, position)
+    --Base level segment numbers
+    if position[1] then
+        local gridx = math.floor((position[1] - intelFramework.PlayableArea[1]) / intelFramework.IntelGridSize) + intelFramework.IntelGridXMin
+        local gridy = math.floor((position[3] - intelFramework.PlayableArea[2]) / intelFramework.IntelGridSize) + intelFramework.IntelGridZMin
+        LOG('Grid return X '..gridx..' Y '..gridy)
+        LOG('Position '..repr(position))
+        LOG('Attempt to return grid location '..repr(intelFramework.IntelGrid[gridx][gridy]))
+
+        return math.floor( (position[1] - intelFramework.PlayableArea[1]) / intelFramework.IntelGridSize) + intelFramework.IntelGridXMin, math.floor((position[3] - intelFramework.PlayableArea[2]) / intelFramework.IntelGridSize) + intelFramework.IntelGridZMin
+    end
+    return false, false
+end,

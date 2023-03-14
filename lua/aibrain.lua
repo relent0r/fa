@@ -1616,6 +1616,7 @@ AIBrain = Class(moho.aibrain_methods) {
         self:IMAPConfiguration()
         if self:IsBaseAI() then
             self:ForkThread(self.MapAnalysis)
+            self:ForkThread(self.InitializeIntelFramework)
         end
     end,
 
@@ -5123,6 +5124,18 @@ AIBrain = Class(moho.aibrain_methods) {
         self.IntelData.MapWaterRatio = self:GetMapWaterRatio()
         local AIAttackUtils = import("/lua/ai/aiattackutilities.lua")
         AIAttackUtils.NavalAttackCheck(self)
+
+    end,
+
+    InitializeIntelFramework = function(self)
+        LOG('PlayableArea' ..repr(ScenarioInfo.MapData.PlayableRect))
+
+        if not self.IntelFramework then
+            self.IntelFramework = {}
+            self.IntelFramework.PlayableArea = ScenarioInfo.MapData.PlayableRect
+            self.IntelFramework.StartPosition = self:GetStartVector3f()
+        end
+        AIUtils.CreateIntelGrid(self, ScenarioInfo.MapData.PlayableRect)
 
     end,
 }
