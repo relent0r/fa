@@ -5128,15 +5128,93 @@ AIBrain = Class(moho.aibrain_methods) {
     end,
 
     InitializeIntelFramework = function(self)
-        LOG('PlayableArea' ..repr(ScenarioInfo.MapData.PlayableRect))
-
         if not self.IntelFramework then
             self.IntelFramework = {}
             self.IntelFramework.PlayableArea = ScenarioInfo.MapData.PlayableRect
             self.IntelFramework.StartPosition = self:GetStartVector3f()
         end
         AIUtils.CreateIntelGrid(self, ScenarioInfo.MapData.PlayableRect)
+        self:ForkThread(self.IntelFrameworkThread)
+        self:ForkThread(self.DrawIntelGrid)
+        local massPoints, massCount = import("/lua/sim/markerutilities.lua").GetMarkersByType('Mass')
+        local allyCount = 0
+        local enemyCount = 0
+        local teams = {}
+        local teamKey = 1
+        local selfIndex = self:GetArmyIndex()
+        for _, v in ArmyBrains do
+            local armyIndex = v:GetArmyIndex()
+            local army
+            for _,b in ScenarioInfo.ArmySetup do
+                if b.ArmyIndex == armyIndex then
+                    army = b
+                end
+            end
+            if not ArmyIsCivilian(armyIndex) then
+                if IsAlly(selfIndex, armyIndex) then
+                    allyCount = allyCount + 1
+                elseif IsEnemy(selfIndex, armyIndex)
+                    enemyCount = enemyCount + 1
+                end
+                
+            end
+        end
+    end,
 
+    IntelFrameworkThread = function(self)
+        LOG('Starting Intel Thread')
+        WaitTicks(math.random(10,30))
+        local intelFramework = self.IntelFramework
+        while not self.Status ~= 'defeat' do
+            local threatTypes = {
+                'Land',
+                'AntiAir',
+                'Naval',
+                'StructuresNotMex',
+                'Experimental',
+                'AntiSurface'
+            }
+            local gameTick = GetGameTick()
+            for _, t in threatTypes do
+                local rawThreats = self:GetThreatsAroundPosition( self.BuilderManagers.MAIN.Position, 16, true, t)
+                for _, raw in rawThreats do
+                    local gridx, gridz = AIUtils.GetIntelGrid(self.IntelFramework, {raw[1], 0, raw[2]})
+                    if self.IntelFramework.IntelGrid[gridx][gridz][t] then
+                        self.IntelFramework.IntelGrid[gridx][gridz][t] = raw[3]
+                        self.IntelFramework.IntelGrid[gridx][gridz].LastThreatCheck = gameTick
+                        LOG('Setting Intel Grid threat type '..t..' table '..repr(self.IntelFramework.IntelGrid[gridx][gridz]))
+                    end
+                end
+            end
+            for x=intelFramework.IntelGridXMin, intelFramework.IntelGridXMax do
+                for z=intelFramework.IntelGridZMin, intelFramework.IntelGridZMax do
+                    if intelFramework.IntelGrid[x][z].LastThreatCheck > 0 and intelFramework.IntelGrid[x][z].LastThreatCheck + 1200 > gameTick then
+                        intelFramework.IntelGrid[x][z].Land = 0
+                        intelFramework.IntelGrid[x][z].AntiAir = 0
+                        intelFramework.IntelGrid[x][z].AntiSurface = 0
+                    end
+                end
+            end
+            WaitTicks(60)
+        end
+    end,
+
+    DrawIntelGrid = function(self)
+        WaitTicks(math.random(30,60))
+        local intelFramework = self.IntelFramework
+        while true do 
+            -- draw iMAP information
+            for _, v in intelFramework.IntelGrid do 
+                for _, c in v do 
+                    if c.Enabled then
+                        if c.Land > 0 then
+                            DrawCircle(c.Position, 10, '0000FF')
+                        end
+                    end
+                end
+            end
+            WaitTicks(2)
+        end
     end,
 }
 
