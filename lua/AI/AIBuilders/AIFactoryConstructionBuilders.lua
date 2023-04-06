@@ -170,9 +170,10 @@ BuilderGroup {
         BuilderName = 'T1 Land Factory Builder MaxSupported',
         PlatoonTemplate = 'T123EngineerBuilder',
         Priority = 950,
+        InstanceCount = 2,
         BuilderConditions = {
             { IBC, 'BrainNotLowPowerMode', {} },
-            --{ UCBC, 'FactoryCapCheck', { 'LocationType', 'Land' } },
+            { EBC, 'GreaterThanMassStorageCurrent', { 150 }},
             { EBC, 'GreaterThanEconEfficiencyCombined', { 0.70, 0.80 } },
             { MIBC, 'PathToEnemy', { 'LocationType', 'Land' }},
             { MIBC, 'CalculateFactorySupportEarly', { 'MAIN' }},
