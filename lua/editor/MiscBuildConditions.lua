@@ -417,7 +417,9 @@ function CalculateFactorySupportEarly(aiBrain, locationType)
     LOG('Mass marker count '..massPotential)
     local reclaimIncome = 0
     if totalMass > 0 then
-        reclaimIncome = totalMass / 600
+        reclaimIncome = totalMass / 300    -- 5 build power, so 15 mass per second per engineer. 
+                                        -- so at 1500 mass we have 50 seconds worth of 30 income per second?
+                                        -- but we will never get that sort of reclaim speed.
     end
     local totalIncome = (massPotential * 2) + reclaimIncome
     local factoriesSupported
