@@ -167,6 +167,28 @@ BuilderGroup {
         },
     },
     Builder {
+        BuilderName = 'T1 Land Factory Builder MaxSupported',
+        PlatoonTemplate = 'T123EngineerBuilder',
+        Priority = 950,
+        BuilderConditions = {
+            { IBC, 'BrainNotLowPowerMode', {} },
+            --{ UCBC, 'FactoryCapCheck', { 'LocationType', 'Land' } },
+            { EBC, 'GreaterThanEconEfficiencyCombined', { 0.70, 0.80 } },
+            { MIBC, 'PathToEnemy', { 'LocationType', 'Land' }},
+            { MIBC, 'CalculateFactorySupportEarly', { 'MAIN' }},
+            { UCBC, 'UnitCapCheckLess', { .8 } },
+        },
+        BuilderType = 'Any',
+        BuilderData = {
+            Construction = {
+                BuildStructures = {
+                    'T1LandFactory',
+                },
+                Location = 'LocationType',
+            }
+        },
+    },
+    Builder {
         BuilderName = 'T1 Land Factory Builder Land Path',
         PlatoonTemplate = 'T123EngineerBuilder',
         Priority = 950,

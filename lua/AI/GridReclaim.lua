@@ -272,6 +272,33 @@ GridReclaim = Class(Grid) {
         return filtered, count
     end,
 
+    ---@param self AIGridReclaim   
+    ---@param bx number                 # in grid space
+    ---@param bz number                 # in grid space
+    ---@param radius number             # in grid space
+    ---@param threshold number          # 
+    ---@param cache? table              # optional value, allows you to re-use memory in hot spots
+    ---@return AIGridReclaimCell[]      # all cells that meet the threhsold
+    ---@return number                   # number of cells found
+    TotalInRadius = function(self, bx, bz, radius, cache)
+        local totalMass = 0
+        local head = 1
+        local cells = self.Cells
+        for lx = -radius, radius do
+            local column = cells[bx + lx]
+            if column then
+                for lz = -radius, radius do
+                    local cell = column[bz + lz]
+                    if cell then
+                        totalMass = totalMass + cell.TotalMass
+                    end
+                end
+            end
+        end
+
+        return totalMass
+    end,
+
     -------------------------------
     -- Reclaim related functions --
 

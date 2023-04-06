@@ -4597,7 +4597,7 @@ Platoon = Class(moho.platoon_methods) {
             end
         end
         local energyCount = 3
-        LOG('CommanderInitializeAI : Energy Production stage 2')
+        --LOG('CommanderInitializeAI : Energy Production stage 2')
         if not hydroPresent then
             IssueClearCommands({eng})
             --LOG('CommanderInitializeAIRNG : No hydro present, we should be building a little more power')
@@ -4642,7 +4642,7 @@ Platoon = Class(moho.platoon_methods) {
                 end
             end
         else
-           LOG('Hydro is present we shouldnt need any more pgens during initialization')
+           --LOG('Hydro is present we shouldnt need any more pgens during initialization')
         end
         if not hydroPresent and closeMarkers > 3 then
             --LOG('CommanderInitializeAIRNG : not hydro and close markers greater than 3, Try to build land factory')
@@ -4665,7 +4665,7 @@ Platoon = Class(moho.platoon_methods) {
         --LOG('CommanderInitializeAIRNG : CDR Initialize almost done, should have just finished final t1 land')
         if hydroPresent and (closeMarkers > 0 or distantMarkers > 0) then
             engPos = eng:GetPosition()
-            LOG('CommanderInitializeAI : Hydro Distance is '..VDist3Sq(engPos,closestHydro.Position))
+            --LOG('CommanderInitializeAI : Hydro Distance is '..VDist3Sq(engPos,closestHydro.Position))
             if VDist3Sq(engPos,closestHydro.Position) > 144 then
                 IssueMove({eng}, closestHydro.Position )
                 while VDist3Sq(engPos,closestHydro.Position) > 100 do
@@ -4674,15 +4674,15 @@ Platoon = Class(moho.platoon_methods) {
                     if eng:IsIdleState() and VDist3Sq(engPos,closestHydro.Position) > 100 then
                         break
                     end
-                    LOG('CommanderInitializeAIRNG : Still inside movement loop')
-                    LOG('Distance is '..VDist3Sq(engPos,closestHydro.Position))
+                    --LOG('CommanderInitializeAIRNG : Still inside movement loop')
+                    --LOG('Distance is '..VDist3Sq(engPos,closestHydro.Position))
                 end
                 LOG('CommanderInitializeAIRNG : We should be close to the hydro now')
             end
             IssueClearCommands({eng})
             local assistList = AIUtils.GetAssistees(aiBrain, 'MAIN', 'Engineer', categories.HYDROCARBON, categories.ALLUNITS)
             local assistee = false
-            LOG('CommanderInitializeAIR : AssistList is '..table.getn(assistList)..' in length')
+            --LOG('CommanderInitializeAIR : AssistList is '..table.getn(assistList)..' in length')
             local assistListCount = 0
             while not next(assistList) do
                 coroutine.yield( 15 )
@@ -4731,7 +4731,7 @@ Platoon = Class(moho.platoon_methods) {
                     coroutine.yield(30)
                 end
                 if ((closeMarkers + distantMarkers > 2) or (closeMarkers + distantMarkers > 1 and GetEconomyStored(aiBrain, 'MASS') > 120)) and eng.UnitBeingAssist:GetFractionComplete() == 1 then
-                    LOG('FactoryBuild playable area x '..playableArea[3]..' playable area z '..playableArea[4])
+                    --LOG('FactoryBuild playable area x '..playableArea[3]..' playable area z '..playableArea[4])
                     if (playableArea[3] > 512 or playableArea[4] > 512) or aiBrain.BrainIntel.AirPlayer then
                         buildLocation, whatToBuild, borderWarning = AIUtils.GetBuildLocation(aiBrain, buildingTmpl, baseTmplDefault['BaseTemplates'][factionIndex], 'T1AirFactory', eng, true, categories.HYDROCARBON, 15, true)
                         if borderWarning and buildLocation and whatToBuild then

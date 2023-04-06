@@ -385,5 +385,55 @@ function ReclaimAvailableInGrid(aiBrain, locationType, mapSearch)
     return true
 end
 
+---@param aiBrain BaseAIBrain
+---@param locationType string
+---@return true | nil
+function CalculateFactorySupportEarly(aiBrain, locationType)
+    -- this condition won't work without a reference to the reclaim grid
+    local gridReclaim = aiBrain.GridReclaim
+    if not gridReclaim then
+        WARN(string.format("Build condition ('ReclaimAvailableInGrid') requires a reference to the reclaim grid in the brain (of %s)", aiBrain.Nickname))
+        return false
+    end
+    
+    -- this condition won't work without a reference to the engineer manager
+    local engManager = aiBrain.BuilderManagers[locationType].EngineerManager --[[@type EngineerManager]]
+    local factoryManager = aiBrain.BuilderManagers[locationType].FactoryManager
+    if not engManager or not factoryManager then
+        return false
+    end
+    local rings = aiBrain.IMAPConfig.Rings
+    -- no need to reclaim when there's nothing around us to reclaim
+    local bx, bz = gridReclaim:ToGridSpace(engManager.Location[1], engManager.Location[3])
+    local totalMass = gridReclaim:TotalInRadius(bx, bz, rings)
+    LOG('Total mass '..totalMass)
+    local massPotential = 0
+    local massMarkers = import("/lua/sim/markerutilities.lua").GetMarkersByType('Mass')
+    for _, marker in massMarkers do
+        if VDist2Sq(marker.position[1], marker.position[3], engManager.Location[1], engManager.Location[3]) < 21025 then
+            massPotential = massPotential + 1
+        end
+    end
+    LOG('Mass marker count '..massPotential)
+    local reclaimIncome = 0
+    if totalMass > 0 then
+        reclaimIncome = totalMass / 600
+    end
+    local totalIncome = (massPotential * 2) + reclaimIncome
+    local factoriesSupported
+    if totalIncome > 0 then
+        factoriesSupported = math.floor(totalIncome / 4)
+    end
+    local currentFactories = engManager:GetNumCategoryBeingBuilt(categories.FACTORY * categories.LAND, categories.ENGINEER)
+    currentFactories = currentFactories + factoryManager:GetNumCategoryFactories(categories.FACTORY * categories.LAND)
+    LOG('currentFactories '..currentFactories)
+    LOG('factoriesSupported '..factoriesSupported)
+
+    if currentFactories < factoriesSupported then
+        return true
+    end
+    return false
+end
+
 -- unused imports kept for mod support
 local Utils = import("/lua/utilities.lua")
