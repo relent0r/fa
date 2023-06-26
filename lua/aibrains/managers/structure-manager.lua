@@ -98,7 +98,7 @@ AIStructureManager = Class(BuilderManager) {
             local fraction = unit:GetFractionComplete()
 
             ---@type UnitBlueprintDefense
-            blueprintDefense = unit.Blueprint.Defense
+            local blueprintDefense = unit.Blueprint.Defense
             airThreat = airThreat + fraction * blueprintDefense.AirThreatLevel
             surfaceThreat = surfaceThreat + fraction * blueprintDefense.SurfaceThreatLevel
             economyThreat = economyThreat + fraction * blueprintDefense.EconomyThreatLevel

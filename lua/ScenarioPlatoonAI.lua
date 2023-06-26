@@ -927,6 +927,7 @@ end
 ---@param aiBrain AIBrain
 ---@return boolean
 function StartBaseTransports(platoon, data, aiBrain)
+    local cmd = false
     -- Move the unit using transports
     if data.UseTransports then
         if data.TransportRoute then
@@ -1648,7 +1649,7 @@ function EngAssist(platoon, engTable)
     -- Have engineers assist the factories
     local engNum = 1
     while engNum <= table.getn(engTable) do
-        eng = engTable[engNum]
+        local eng = engTable[engNum]
         if not eng.Dead and not platoon.PlatoonData.Rebuilding then
             local lowNum = -1
             local lowFac = false

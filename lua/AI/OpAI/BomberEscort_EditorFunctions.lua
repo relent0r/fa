@@ -83,7 +83,6 @@ end
 function BomberEscortAI(platoon)
     local aiBrain = platoon:GetBrain()
     local target = false
-    --local cmd = false
     while aiBrain:PlatoonExists(platoon) do
         target = false
         if table.getn(platoon:GetSquadUnits('artillery')) > 0 then
@@ -93,7 +92,7 @@ function BomberEscortAI(platoon)
         end
         if target and not target:IsDead() then
             platoon:Stop()
-            cmd = platoon:AggressiveMoveToLocation( target:GetPosition() )
+            platoon:AggressiveMoveToLocation( target:GetPosition() )
         else
             platoon:AggressiveMoveToLocation( (aiBrain:GetHighestThreatPosition(2, true)) )
         end

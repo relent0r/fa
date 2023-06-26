@@ -1255,7 +1255,7 @@ Platoon = Class(moho.platoon_methods) {
 
                 highPri = true
 
-                targetData = aiBrain.InterestList.HighPriority[1]
+                local targetData = aiBrain.InterestList.HighPriority[1]
                 targetData.LastScouted = GetGameTimeSeconds()
                 targetArea = targetData.Position
 
@@ -1266,7 +1266,7 @@ Platoon = Class(moho.platoon_methods) {
                 aiBrain.IntelData.AirHiPriScouts = 0
                 aiBrain.IntelData.AirLowPriScouts = aiBrain.IntelData.AirLowPriScouts + 1
 
-                targetData = aiBrain.InterestList.LowPriority[1]
+                local targetData = aiBrain.InterestList.LowPriority[1]
                 targetData.LastScouted = GetGameTimeSeconds()
                 targetArea = targetData.Position
 
@@ -1447,7 +1447,7 @@ Platoon = Class(moho.platoon_methods) {
                             --LOG('*AI DEBUG: ARMY '.. aiBrain:GetArmyIndex() ..': --- POOL DISTRESS RESPONSE ---')
                             local group = {}
                             for k,v in platoonUnits do
-                                vPos = table.copy(v:GetPosition())
+                                local vPos = table.copy(v:GetPosition())
                                 if VDist2(vPos[1], vPos[3], locData.Location[1], locData.Location[3]) < locData.Radius then
                                     table.insert(group, v)
                                 end
@@ -3756,7 +3756,7 @@ Platoon = Class(moho.platoon_methods) {
            target = AIUtils.AIFindBrainTargetInRange(aiBrain, self, 'Attack', 1500, {'STRUCTURE FACTORY'},  aiBrain:GetCurrentEnemy())
            if target then
                local markerList = AIUtils.AIGetMarkerLocations(aiBrain, 'Mass')
-               markers = AIUtils.AISortMarkersFromLastPos(aiBrain,markerList,7,false,false,false,false,target)
+               local markers = AIUtils.AISortMarkersFromLastPos(aiBrain,markerList,7,false,false,false,false,target)
                targetLocation = markers[5]
 
                LOG('*AI DEBUG:  Waiting for transports....')

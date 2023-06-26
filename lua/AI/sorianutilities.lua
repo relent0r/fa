@@ -1272,7 +1272,7 @@ end
 -- Small function the draw intel points on the map for debugging
 ---@param aiBrain AIBrain
 function DrawIntel(aiBrain)
-    threatColor = {
+    local threatColor = {
         -- ThreatType = { ARGB value }
         StructuresNotMex = 'ff00ff00', -- Green
         Commander = 'ff00ffff', -- Cyan
