@@ -69,6 +69,7 @@ AIPlatoonAdaptiveRaidBehavior = Class(AIPlatoon) {
             end
             self.MaxTransportDistance = 250
             self.MaxPlatoonCount = 25
+            self.PreviousRaidedPositions = {}
 
             -- Set the movement layer for pathing, included for mods where water or air based engineers may exist
             self.MovementLayer = self:GetNavigationalLayer()
@@ -103,47 +104,28 @@ AIPlatoonAdaptiveRaidBehavior = Class(AIPlatoon) {
             local label, error = NavUtils.GetLabel(self.MovementLayer, position)
 
             if label then
-                -- TODO
                 -- this should be cached, part of the marker utilities
-                local expansions, count = MarkerUtils.GetMarkersByType('Expansion Area')
                 ---@type MarkerData[]
                 local candidates = { }
                 local unpathableCandidates = { }
                 local candidateCount = 0
                 local unpathableCandidateCount = 0
-                for k = 1, count do
-                    local expansion = expansions[k]
-                    if NavUtils.GetLabel(self.MovementLayer, expansion.position) == label then
-                        if aiBrain.GridPresence:GetInferredStatus(expansion.position) ~= 'Allied' then
-                            candidates[candidateCount + 1] = expansion
-                            candidateCount = candidateCount + 1
-                        end
-                    elseif not NavUtils.CanPathTo(self.MovementLayer, position, expansion.position) then
-                        if aiBrain.GridPresence:GetInferredStatus(expansion.position) ~= 'Allied' then
-                            unpathableCandidates[unpathableCandidateCount + 1] = expansion
-                            unpathableCandidateCount = unpathableCandidateCount + 1
-                        end
-                    end
-                end
-                -- END OF TODO
 
                 -- something odd happened: there are no expansions with a matching label
-                if candidateCount == 0 and unpathableCandidateCount == 0 then
-                    self:LogDebug(string.format('no expansion candidates found on label %d switch to mass points', label))
-                    -- There are no expansion positions to raid, switch to mass markers
-                    local massmarkers, count = MarkerUtils.GetMarkersByType('Mass')
-                    for k = 1, count do
-                        local masspoint = massmarkers[k]
-                        if NavUtils.GetLabel(self.MovementLayer, masspoint.position) == label then
-                            if aiBrain.GridPresence:GetInferredStatus(masspoint.position) ~= 'Allied' then
-                                candidates[candidateCount + 1] = masspoint
-                                candidateCount = candidateCount + 1
-                            end
-                        elseif not NavUtils.CanPathTo(self.MovementLayer, position, masspoint.position) then
-                            if aiBrain.GridPresence:GetInferredStatus(masspoint.position) ~= 'Allied' then
-                                unpathableCandidates[unpathableCandidateCount + 1] = masspoint
-                                unpathableCandidateCount = unpathableCandidateCount + 1
-                            end
+                self:LogDebug(string.format('no expansion candidates found on label %d switch to mass points', label))
+                -- There are no expansion positions to raid, switch to mass markers
+                local massmarkers, count = MarkerUtils.GetMarkersByType('Mass')
+                for k = 1, count do
+                    local masspoint = massmarkers[k]
+                    if NavUtils.GetLabel(self.MovementLayer, masspoint.position) == label then
+                        if aiBrain.GridPresence:GetInferredStatus(masspoint.position) ~= 'Allied' then
+                            candidates[candidateCount + 1] = masspoint
+                            candidateCount = candidateCount + 1
+                        end
+                    elseif not NavUtils.CanPathTo(self.MovementLayer, position, masspoint.position) then
+                        if aiBrain.GridPresence:GetInferredStatus(masspoint.position) ~= 'Allied' then
+                            unpathableCandidates[unpathableCandidateCount + 1] = masspoint
+                            unpathableCandidateCount = unpathableCandidateCount + 1
                         end
                     end
                 end
@@ -158,28 +140,33 @@ AIPlatoonAdaptiveRaidBehavior = Class(AIPlatoon) {
                     return
                 end
 
-                -- pick random expansion that we can Navigating to
+                -- pick random mass marker that we can Navigating to
                 local selectionNumber
-                local expansion
+                local raidMarker
+                self:LogDebug(string.format('Number of pathable candidates '..candidateCount))
+                self:LogDebug(string.format('Number of pathable candidates '..unpathableCandidateCount))
                 if candidateCount > 0 then
                     selectionNumber = Random(1, candidateCount)
-                    expansion = candidates[selectionNumber]
+                    self:LogDebug(string.format('Selected pathable candidate number '..selectionNumber))
+                    raidMarker = candidates[selectionNumber]
                 elseif unpathableCandidateCount > 0 then
                     selectionNumber = Random(1, unpathableCandidateCount)
-                    expansion = unpathableCandidates[selectionNumber]
+                    self:LogDebug(string.format('Selected unpathable candidate number '..selectionNumber))
+                    raidMarker = unpathableCandidates[selectionNumber]
                 end
                 if unpathableCandidateCount > 0 then
                     self:LogDebug(string.format('unpathableCandidateCount '..unpathableCandidateCount))
-                    self:LogDebug(string.format('Current raid position is '..repr(expansion.position)))
+                    self:LogDebug(string.format('Current raid position is '..repr(raidMarker.position)))
                 end
-                self.LocationToRaid = expansion.position
+                    
+                self.LocationToRaid = raidMarker.position
                 if self.LocationToRaid then
                     self:LogDebug(string.format('Location to raid is '..repr(self.LocationToRaid)))
                 else
                     self:LogDebug(string.format('Location to raid is nil'))
                 end
-                local rx = expansion.position[1] - position[1]
-                local rz = expansion.position[3] - position[3]
+                local rx = raidMarker.position[1] - position[1]
+                local rz = raidMarker.position[3] - position[3]
                 if rx * rx + rz * rz > 3600 then
                     self:ChangeState(self.Navigating)
                     return
@@ -301,7 +288,7 @@ AIPlatoonAdaptiveRaidBehavior = Class(AIPlatoon) {
                             local threatTable = brain:GetThreatsAroundPosition(position, 1, true, 'AntiSurface')
                             local platoonThreat = self:CalculatePlatoonThreatAroundPosition('Surface', categories.MOBILE * categories.DIRECTFIRE - categories.SCOUT, position, 30)
                             local positionStatus = brain.GridPresence:GetInferredStatus(position)
-                            if positionStatus != 'Allied' or platoonThreat * 1.5 < threat then
+                            if positionStatus != 'Allied' and platoonThreat * 1.5 < threat then
                                 if threatTable and not TableEmpty(threatTable) then
                                     local info = threatTable[Random(1, TableGetn(threatTable))]
                                     self.ThreatToEvade = { info[1], GetSurfaceHeight(info[1], info[2]), info[2] }
@@ -322,13 +309,15 @@ AIPlatoonAdaptiveRaidBehavior = Class(AIPlatoon) {
                             for k = 1, TableGetn(opportunities) do
                                 local info = opportunities[k]
                                 cache[1] = info[1]
+                                cache[2] = GetSurfaceHeight(info[1], info[2])
                                 cache[3] = info[2]
-
-                                local threat = brain:GetThreatAtPosition(cache, 0, true, 'AntiSurface')
-                                if threat == 0 then
-                                    self.OpportunityToRaid = { info[1], GetSurfaceHeight(info[1], info[2]), info[2] }
-                                    self:ChangeState(self.RaidingOpportunity)
-                                    return
+                                if NavUtils.CanPathTo(self.MovementLayer, position, cache) then
+                                    local threat = brain:GetThreatAtPosition(cache, 0, true, 'AntiSurface')
+                                    if threat == 0 then
+                                        self.OpportunityToRaid = { info[1], GetSurfaceHeight(info[1], info[2]), info[2] }
+                                        self:ChangeState(self.RaidingOpportunity)
+                                        return
+                                    end
                                 end
                             end
                         end
