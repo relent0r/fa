@@ -907,7 +907,7 @@ function ReturnUnloadedUnitToPool( aiBrain, unit )
 	local attached = true
 	
 	if not unit.Dead then
-		IssueToUnitClearCommands(unit)
+		IssueToUnitClearCommands({unit})
 		local ident = Random(1,999999)
 		local returnpool = aiBrain:MakePlatoon('ReturnToPool'..tostring(ident), 'none')
 		AssignUnitsToPlatoon( aiBrain, returnpool, {unit}, 'Unassigned', 'None' )
